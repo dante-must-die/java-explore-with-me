@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class StatsClient {
+public class StatsClient { //asdw
     private final RestTemplate restTemplate = new RestTemplate();
     private static final String BASE_URL = "http://localhost:9090";
 
