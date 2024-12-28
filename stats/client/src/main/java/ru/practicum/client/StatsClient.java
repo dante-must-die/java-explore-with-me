@@ -12,26 +12,31 @@ import java.util.List;
 @Component
 public class StatsClient {
 
-    private final RestTemplate rest = new RestTemplate();
-    private final String serverUrl = "http://localhost:9090";
+    private static final String SERVER_URL = "http://localhost:9090";
+    private final RestTemplate rest;
+
+    /**
+     * Инжектим RestTemplate через конструктор.
+     */
+    public StatsClient(RestTemplate rest) {
+        this.rest = rest;
+    }
 
     /**
      * POST /hit — сохранение информации о запросе.
      */
     public void hit(EndpointHit endpointHit) {
-        rest.postForEntity(serverUrl + "/hit", endpointHit, Void.class);
+        rest.postForEntity(SERVER_URL + "/hit", endpointHit, Void.class);
     }
 
     /**
      * GET /stats — получение статистики.
      */
     public List<ViewStats> getStats(String start, String end, List<String> uris, boolean unique) {
-        // URLEncoder для safety
         String startEnc = URLEncoder.encode(start, StandardCharsets.UTF_8);
         String endEnc   = URLEncoder.encode(end, StandardCharsets.UTF_8);
 
-        // Собираем URL: /stats?start=...&end=...&uris=...&unique=...
-        StringBuilder sb = new StringBuilder(serverUrl + "/stats?");
+        StringBuilder sb = new StringBuilder(SERVER_URL + "/stats?");
         sb.append("start=").append(startEnc);
         sb.append("&end=").append(endEnc);
 
@@ -49,4 +54,3 @@ public class StatsClient {
         return List.of(response);
     }
 }
-

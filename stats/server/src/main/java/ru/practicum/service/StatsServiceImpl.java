@@ -7,7 +7,6 @@ import ru.practicum.ViewStats;
 import ru.practicum.model.HitEntity;
 import ru.practicum.repository.HitRepository;
 
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -17,8 +16,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatsServiceImpl implements StatsService {
 
-    private final HitRepository repository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private final HitRepository repository;
 
     @Override
     public void saveHit(EndpointHit hitDto) {
@@ -44,7 +44,7 @@ public class StatsServiceImpl implements StatsService {
 
         boolean urisEmpty = uris.isEmpty();
 
-        if (unique != null && unique) {
+        if (Boolean.TRUE.equals(unique)) {
             // Считаем уникальные IP
             return repository.getUniqueHits(start, end, uris, urisEmpty);
         } else {
