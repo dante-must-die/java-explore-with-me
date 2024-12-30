@@ -1,14 +1,64 @@
+version: '3.8'
 services:
-  stats-server:
-    ports:
-      - "9090:9090"
-
+  # База данных для сервиса статистики
   stats-db:
     image: postgres:16.1
-
-  ewm-service:
+    container_name: stats_db
+    environment:
+      POSTGRES_DB: stats
+      POSTGRES_USER: stats_user
+      POSTGRES_PASSWORD: stats_pass
     ports:
-      - "8080:8080"
+      - "5433:5432"
+    restart: always
 
+  # Сам сервис статистики (порт 9090)
+  stats-server:
+    build: ./stats/server
+    container_name: stats_server
+    environment:
+      # Подключаемся по имени сервиса "stats-db" (а не "stats_db")
+      SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
+      SPRING_DATASOURCE_USERNAME: stats_user
+      SPRING_DATASOURCE_PASSWORD: stats_pass
+
+      # Чтобы избежать ошибки диалекта, можно прописать явно:
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+
+      # Чтобы Hibernate создавал/обновлял таблицы:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "9090:9090"
+    depends_on:
+      - stats-db
+    restart: always
+
+  # База данных для основного сервиса
   ewm-db:
     image: postgres:16.1
+    container_name: ewm_db
+    environment:
+      POSTGRES_DB: ewm
+      POSTGRES_USER: ewm_user
+      POSTGRES_PASSWORD: ewm_pass
+    ports:
+      - "5434:5432"
+    restart: always
+
+  # Основной сервис (порт 8080)
+  ewm-service:
+    build: ./service
+    container_name: ewm_service
+    environment:
+      # Подключаемся по имени сервиса "ewm-db" (а не "ewm_db")
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
+      SPRING_DATASOURCE_USERNAME: ewm_user
+      SPRING_DATASOURCE_PASSWORD: ewm_pass
+
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ewm-db
+    restart: always
