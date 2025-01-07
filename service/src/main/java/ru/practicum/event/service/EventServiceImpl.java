@@ -305,11 +305,12 @@ public class EventServiceImpl implements EventService {
 
         // 5) Записываем это число во "views"
         e.setViews(uniqueViews);
-        // (Опционально сохранять в БД, если необходимо)
+        eventRepository.save(e); // Сохраняем изменения
 
         // 6) Возвращаем EventFullDto
         return EventMapper.toEventFullDto(e);
     }
+
 
     private void sendHitToStats(Event e, HttpServletRequest request) {
         try {
@@ -317,7 +318,7 @@ public class EventServiceImpl implements EventService {
             hit.setApp("ewm-service");  // название нашего приложения
             hit.setIp(request.getRemoteAddr()); // IP клиента
             hit.setUri(request.getRequestURI());
-            hit.setTimestamp(LocalDateTime.now()); // Исправлено: устанавливаем LocalDateTime напрямую
+            hit.setTimestamp(String.valueOf(LocalDateTime.now()));
 
             statsClient.hit(hit);
         } catch (Exception ex) {
@@ -490,13 +491,13 @@ public class EventServiceImpl implements EventService {
      */
     private long getUniqueViews(Event e) {
         // Берём начало интервала = publishedOn (или какое-то дефолтное)
-        LocalDateTime start = e.getPublishedOn();
+        String start = String.valueOf(e.getPublishedOn());
         if (start == null) {
             // если почему-то событие published, но publishedOn == null
-            start = LocalDateTime.now().minusYears(10);
+            start = String.valueOf(LocalDateTime.now().minusYears(10));
         }
         // конец интервала = "сейчас"
-        LocalDateTime end = LocalDateTime.now();
+        String end = String.valueOf(LocalDateTime.now());
 
         // uri = "/events/{id}"
         String uri = "/events/" + e.getId();

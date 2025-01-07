@@ -2,6 +2,7 @@ version: '3.8'
 services:
   # База данных для сервиса статистики
   stats-db:
+    container_name: stats-db-container
     image: postgres:16.1
     environment:
       POSTGRES_DB: stats
@@ -14,6 +15,7 @@ services:
   # Сам сервис статистики (порт 9090)
   stats-server:
     build: ./stats/server
+    container_name: stats-server-container
     environment:
       # Подключаемся по имени сервиса "stats-db" (а не "stats_db")
       SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
@@ -33,6 +35,7 @@ services:
 
   # База данных для основного сервиса
   ewm-db:
+    container_name: ewm-db-container
     image: postgres:16.1
     environment:
       POSTGRES_DB: ewm
@@ -44,6 +47,7 @@ services:
 
   # Основной сервис (порт 8080)
   ewm-service:
+    container_name: ewm-service-container
     build: ./service
     environment:
       # Подключаемся по имени сервиса "ewm-db" (а не "ewm_db")

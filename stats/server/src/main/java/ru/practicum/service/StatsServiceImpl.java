@@ -1,8 +1,6 @@
 package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.practicum.EndpointHit;
 import ru.practicum.ViewStats;
@@ -10,64 +8,48 @@ import ru.practicum.model.HitEntity;
 import ru.practicum.repository.HitRepository;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class StatsServiceImpl implements StatsService {
 
-    private static final Logger logger = LoggerFactory.getLogger(StatsServiceImpl.class);
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final HitRepository repository;
 
     @Override
     public void saveHit(EndpointHit hitDto) {
-        try {
-            HitEntity entity = new HitEntity();
-            entity.setApp(hitDto.getApp());
-            entity.setUri(hitDto.getUri());
-            entity.setIp(hitDto.getIp());
-            entity.setTimestamp(hitDto.getTimestamp()); // Предполагается, что hitDto.getTimestamp() уже LocalDateTime
+        // Преобразуем EndpointHit -> HitEntity
+        HitEntity entity = new HitEntity();
+        entity.setApp(hitDto.getApp());
+        entity.setUri(hitDto.getUri());
+        entity.setIp(hitDto.getIp());
+        entity.setTimestamp(LocalDateTime.parse(hitDto.getTimestamp(), FORMATTER));
 
-            repository.save(entity);
-            logger.info("Saved hit: {}", entity);
-        } catch (Exception e) {
-            logger.error("Error saving hit: {}", e.getMessage());
-            throw e;
-        }
+        repository.save(entity);
     }
 
     @Override
-    public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
-        try {
-            logger.info("Fetching stats from {} to {}", start, end);
+    public List<ViewStats> getStats(String startStr, String endStr, List<String> uris, Boolean unique) {
+        LocalDateTime start = LocalDateTime.parse(startStr, FORMATTER);
+        LocalDateTime end = LocalDateTime.parse(endStr, FORMATTER);
 
-            boolean hasUris = uris != null && !uris.isEmpty();
-            List<ViewStats> stats;
+        // Если null — сделаем пустой список, чтобы мы могли игнорировать условие по uri
+        if (uris == null) {
+            uris = Collections.emptyList();
+        }
 
-            if (Boolean.TRUE.equals(unique)) {
-                if (hasUris) {
-                    logger.info("Fetching unique hits with URIs: {}", uris);
-                    stats = repository.getUniqueHitsWithUris(start, end, uris);
-                } else {
-                    logger.info("Fetching unique hits without URIs filter");
-                    stats = repository.getUniqueHits(start, end);
-                }
-            } else {
-                if (hasUris) {
-                    logger.info("Fetching all hits with URIs: {}", uris);
-                    stats = repository.getAllHitsWithUris(start, end, uris);
-                } else {
-                    logger.info("Fetching all hits without URIs filter");
-                    stats = repository.getAllHits(start, end);
-                }
-            }
+        boolean urisEmpty = uris.isEmpty();
 
-            logger.info("Fetched {} stats records", stats.size());
-            return stats;
-        } catch (Exception e) {
-            logger.error("Error fetching stats: {}", e.getMessage());
-            throw e;
+        if (Boolean.TRUE.equals(unique)) {
+            // Считаем уникальные IP
+            return repository.getUniqueHits(start, end, uris, urisEmpty);
+        } else {
+            // Считаем все запросы
+            return repository.getAllHits(start, end, uris, urisEmpty);
         }
     }
 }

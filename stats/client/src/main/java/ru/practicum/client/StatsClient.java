@@ -1,66 +1,56 @@
 package ru.practicum.client;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.EndpointHit;
 import ru.practicum.ViewStats;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
 public class StatsClient {
 
-    private final String serverUrl;
+    private static final String SERVER_URL = "http://localhost:9090";
     private final RestTemplate rest;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
-     * Инжектим RestTemplate и URL сервера статистики через конструктор.
+     * Инжектим RestTemplate через конструктор.
      */
-    public StatsClient(RestTemplate rest, @Value("${stats.server.url}") String serverUrl) {
+    public StatsClient(RestTemplate rest) {
         this.rest = rest;
-        this.serverUrl = serverUrl;
     }
 
     /**
      * POST /hit — сохранение информации о запросе.
      */
     public void hit(EndpointHit endpointHit) {
-        String url = UriComponentsBuilder.fromHttpUrl(serverUrl)
-                .path("/hit")
-                .toUriString();
-        rest.postForEntity(url, endpointHit, Void.class);
+        rest.postForEntity(SERVER_URL + "/hit", endpointHit, Void.class);
     }
 
     /**
      * GET /stats — получение статистики.
      */
-    public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-        String startStr = start.format(FORMATTER);
-        String endStr = end.format(FORMATTER);
+    public List<ViewStats> getStats(String start, String end, List<String> uris, boolean unique) {
+        String startEnc = URLEncoder.encode(start, StandardCharsets.UTF_8);
+        String endEnc   = URLEncoder.encode(end, StandardCharsets.UTF_8);
 
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(serverUrl)
-                .path("/stats")
-                .queryParam("start", startStr)
-                .queryParam("end", endStr)
-                .queryParam("unique", unique);
+        StringBuilder sb = new StringBuilder(SERVER_URL + "/stats?");
+        sb.append("start=").append(startEnc);
+        sb.append("&end=").append(endEnc);
 
         if (uris != null && !uris.isEmpty()) {
             for (String uri : uris) {
-                uriBuilder.queryParam("uris", uri);
+                sb.append("&uris=").append(URLEncoder.encode(uri, StandardCharsets.UTF_8));
             }
         }
+        sb.append("&unique=").append(unique);
 
-        String url = uriBuilder.toUriString();
-        ViewStats[] response = rest.getForObject(url, ViewStats[].class);
+        ViewStats[] response = rest.getForObject(sb.toString(), ViewStats[].class);
         if (response == null) {
             return List.of();
         }
         return List.of(response);
     }
-
 }
