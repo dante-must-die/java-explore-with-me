@@ -318,7 +318,7 @@ public class EventServiceImpl implements EventService {
             hit.setApp("ewm-service");  // название нашего приложения
             hit.setIp(request.getRemoteAddr()); // IP клиента
             hit.setUri(request.getRequestURI());
-            hit.setTimestamp(String.valueOf(LocalDateTime.now()));
+            hit.setTimestamp(LocalDateTime.now().format(FORMATTER)); // Используем правильный формат
 
             statsClient.hit(hit);
         } catch (Exception ex) {
@@ -326,6 +326,7 @@ public class EventServiceImpl implements EventService {
             System.err.println("sendHitToStats error: " + ex.getMessage());
         }
     }
+
 
     // ------------------ PRIVATE ------------------
 

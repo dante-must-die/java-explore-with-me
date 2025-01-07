@@ -12,7 +12,7 @@ import java.util.List;
 @Component
 public class StatsClient {
 
-    private static final String SERVER_URL = "http://localhost:9090";
+    private static final String SERVER_URL = "http://stats-server:9090";
     private final RestTemplate rest;
 
     /**
