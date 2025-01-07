@@ -9,8 +9,6 @@ import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.compilation.service.CompilationService;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/admin/compilations")
 @RequiredArgsConstructor

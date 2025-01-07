@@ -9,7 +9,8 @@ public class RequestMapper {
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private RequestMapper() {}
+    private RequestMapper() {
+    }
 
     public static ParticipationRequestDto toDto(Request r) {
         return new ParticipationRequestDto(

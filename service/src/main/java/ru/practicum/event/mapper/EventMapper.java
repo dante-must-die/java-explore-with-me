@@ -14,7 +14,8 @@ import java.time.format.DateTimeFormatter;
  */
 public class EventMapper {
 
-    private EventMapper() {}
+    private EventMapper() {
+    }
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 

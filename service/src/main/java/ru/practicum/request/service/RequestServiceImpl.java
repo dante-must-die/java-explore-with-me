@@ -118,8 +118,7 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public EventRequestStatusUpdateResult changeRequestStatus(Long userId,
                                                               Long eventId,
-                                                              EventRequestStatusUpdateRequest updateRequest)
-    {
+                                                              EventRequestStatusUpdateRequest updateRequest) {
         // Находим событие
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event " + eventId + " not found"));
