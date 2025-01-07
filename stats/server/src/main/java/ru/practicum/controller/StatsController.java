@@ -7,6 +7,10 @@ import ru.practicum.EndpointHit;
 import ru.practicum.ViewStats;
 import ru.practicum.service.StatsService;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -14,6 +18,7 @@ import java.util.List;
 public class StatsController {
 
     private final StatsService statsService;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * POST /hit
@@ -36,11 +41,24 @@ public class StatsController {
      *  - unique (boolean, default = false)
      */
     @GetMapping("/stats")
-    public List<ViewStats> getStats(@RequestParam String start,
-                                    @RequestParam String end,
-                                    @RequestParam(required = false) List<String> uris,
-                                    @RequestParam(defaultValue = "false") Boolean unique) {
-        return statsService.getStats(start, end, uris, unique);
+    public List<ViewStats> getStats(
+            @RequestParam String start,
+            @RequestParam String end,
+            @RequestParam(required = false) List<String> uris,
+            @RequestParam(defaultValue = "false") Boolean unique) {
+
+        try {
+            // Декодируем параметры, заменяя %20 на пробелы
+            String decodedStart = URLDecoder.decode(start, StandardCharsets.UTF_8);
+            String decodedEnd = URLDecoder.decode(end, StandardCharsets.UTF_8);
+
+            // Парсим строки в LocalDateTime
+            LocalDateTime startDateTime = LocalDateTime.parse(decodedStart, FORMATTER);
+            LocalDateTime endDateTime = LocalDateTime.parse(decodedEnd, FORMATTER);
+
+            return statsService.getStats(startDateTime, endDateTime, uris, unique);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid date format. Expected format: yyyy-MM-dd HH:mm:ss", e);
+        }
     }
 }
-
