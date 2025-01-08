@@ -1,7 +1,9 @@
 package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.EndpointHit;
 import ru.practicum.ViewStats;
 import ru.practicum.model.HitEntity;
@@ -39,8 +41,14 @@ public class StatsServiceImpl implements StatsService {
         String decodedStart = URLDecoder.decode(startStr, StandardCharsets.UTF_8);
         String decodedEnd = URLDecoder.decode(endStr, StandardCharsets.UTF_8);
 
+
         LocalDateTime start = LocalDateTime.parse(decodedStart, FORMATTER);
         LocalDateTime end = LocalDateTime.parse(decodedEnd, FORMATTER);
+
+        if (start.isAfter(end)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Start date [" + start + "] cannot be after end date [" + end + "].");
+        }
 
         // Если uris == null — делаем из неё пустой список,
         // чтобы в запросе использовать проверку (urisEmpty) и не падать на null
