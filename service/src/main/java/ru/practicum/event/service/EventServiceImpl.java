@@ -31,12 +31,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
-
     private final StatsClient statsClient;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // ------------------ ADMIN ------------------
 
@@ -292,39 +291,20 @@ public class EventServiceImpl implements EventService {
         Event e = eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Event " + id + " not found"));
 
-        // 2) Проверяем статус
         if (e.getState() != EventState.PUBLISHED) {
             throw new NotFoundException("Event " + id + " is not published");
         }
 
-        // 3) Отправляем "hit" в сервис статистики
+        // 3) Отправляем hit в сервис статистики
         sendHitToStats(e, request);
 
         // 4) Теперь получаем уникальное количество IP из сервиса статистики
         long uniqueViews = getUniqueViews(e);
 
-        // 5) Записываем это число во "views"
         e.setViews(uniqueViews);
         eventRepository.save(e); // Сохраняем изменения
 
-        // 6) Возвращаем EventFullDto
         return EventMapper.toEventFullDto(e);
-    }
-
-
-    private void sendHitToStats(Event e, HttpServletRequest request) {
-        try {
-            EndpointHit hit = new EndpointHit();
-            hit.setApp("ewm-service");  // название нашего приложения
-            hit.setIp(request.getRemoteAddr()); // IP клиента
-            hit.setUri(request.getRequestURI());
-            hit.setTimestamp(LocalDateTime.now().format(FORMATTER)); // Используем правильный формат
-
-            statsClient.hit(hit);
-        } catch (Exception ex) {
-            // Логируем, но не ломаем запрос:
-            System.err.println("sendHitToStats error: " + ex.getMessage());
-        }
     }
 
 
@@ -492,13 +472,13 @@ public class EventServiceImpl implements EventService {
      */
     private long getUniqueViews(Event e) {
         // Берём начало интервала = publishedOn (или какое-то дефолтное)
-        String start = String.valueOf(e.getPublishedOn());
+        LocalDateTime start = e.getPublishedOn();
         if (start == null) {
             // если почему-то событие published, но publishedOn == null
-            start = String.valueOf(LocalDateTime.now().minusYears(10));
+            start = LocalDateTime.now().minusYears(10);
         }
         // конец интервала = "сейчас"
-        String end = String.valueOf(LocalDateTime.now());
+        LocalDateTime end = LocalDateTime.now();
 
         // uri = "/events/{id}"
         String uri = "/events/" + e.getId();
@@ -515,6 +495,21 @@ public class EventServiceImpl implements EventService {
             System.err.println("getUniqueViews error: " + ex.getMessage());
             // Если статистика недоступна — вернём, напр., 0
             return 0L;
+        }
+    }
+
+    private void sendHitToStats(Event e, HttpServletRequest request) {
+        try {
+            EndpointHit hit = new EndpointHit();
+            hit.setApp("ewm-service");  // название нашего приложения
+            hit.setIp(request.getRemoteAddr()); // IP клиента
+            hit.setUri(request.getRequestURI());
+            hit.setTimestamp(LocalDateTime.now().format(FORMATTER)); // Используем правильный формат
+
+            statsClient.hit(hit);
+        } catch (Exception ex) {
+            // Логируем, но не ломаем запрос:
+            System.err.println("sendHitToStats error: " + ex.getMessage());
         }
     }
 }
