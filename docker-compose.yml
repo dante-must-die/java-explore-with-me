@@ -2,8 +2,8 @@ version: '3.8'
 services:
   # База данных для сервиса статистики
   stats-db:
+    container_name: stats-db-container
     image: postgres:16.1
-    container_name: stats_db
     environment:
       POSTGRES_DB: stats
       POSTGRES_USER: stats_user
@@ -15,7 +15,7 @@ services:
   # Сам сервис статистики (порт 9090)
   stats-server:
     build: ./stats/server
-    container_name: stats_server
+    container_name: stats-server-container
     environment:
       # Подключаемся по имени сервиса "stats-db" (а не "stats_db")
       SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
@@ -35,8 +35,8 @@ services:
 
   # База данных для основного сервиса
   ewm-db:
+    container_name: ewm-db-container
     image: postgres:16.1
-    container_name: ewm_db
     environment:
       POSTGRES_DB: ewm
       POSTGRES_USER: ewm_user
@@ -47,8 +47,8 @@ services:
 
   # Основной сервис (порт 8080)
   ewm-service:
+    container_name: ewm-service-container
     build: ./service
-    container_name: ewm_service
     environment:
       # Подключаемся по имени сервиса "ewm-db" (а не "ewm_db")
       SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
@@ -61,4 +61,5 @@ services:
       - "8080:8080"
     depends_on:
       - ewm-db
+      - stats-server
     restart: always

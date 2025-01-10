@@ -1,12 +1,16 @@
 package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.EndpointHit;
 import ru.practicum.ViewStats;
 import ru.practicum.model.HitEntity;
 import ru.practicum.repository.HitRepository;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -34,10 +38,20 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     public List<ViewStats> getStats(String startStr, String endStr, List<String> uris, Boolean unique) {
-        LocalDateTime start = LocalDateTime.parse(startStr, FORMATTER);
-        LocalDateTime end = LocalDateTime.parse(endStr, FORMATTER);
+        String decodedStart = URLDecoder.decode(startStr, StandardCharsets.UTF_8);
+        String decodedEnd = URLDecoder.decode(endStr, StandardCharsets.UTF_8);
 
-        // Если null — сделаем пустой список, чтобы мы могли игнорировать условие по uri
+
+        LocalDateTime start = LocalDateTime.parse(decodedStart, FORMATTER);
+        LocalDateTime end = LocalDateTime.parse(decodedEnd, FORMATTER);
+
+        if (start.isAfter(end)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Start date [" + start + "] cannot be after end date [" + end + "].");
+        }
+
+        // Если uris == null — делаем из неё пустой список,
+        // чтобы в запросе использовать проверку (urisEmpty) и не падать на null
         if (uris == null) {
             uris = Collections.emptyList();
         }
@@ -45,7 +59,7 @@ public class StatsServiceImpl implements StatsService {
         boolean urisEmpty = uris.isEmpty();
 
         if (Boolean.TRUE.equals(unique)) {
-            // Считаем уникальные IP
+            // Считаем уникальные IP (distinct).
             return repository.getUniqueHits(start, end, uris, urisEmpty);
         } else {
             // Считаем все запросы
