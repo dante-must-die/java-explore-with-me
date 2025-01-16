@@ -5,19 +5,17 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
 import ru.practicum.category.dto.CategoryDto;
+import ru.practicum.comment.dto.CommentDto; // <-- импорт
 import ru.practicum.user.dto.UserShortDto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * Полная информация о событии (для отдачи клиенту).
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventFullDto {
-
     private Long id;
     @Length(min = 20, max = 2000)
     private String annotation;
@@ -32,20 +30,20 @@ public class EventFullDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime eventDate;
 
-    private UserShortDto initiator; // краткая инфа о пользователе
-
+    private UserShortDto initiator;
     private LocationDto location;
-
     private Boolean paid;
     @PositiveOrZero(message = "Ограничение на количество участников не может быть отрицательным числом")
     private Long participantLimit;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime publishedOn;
-
     private Boolean requestModeration;
     private String state;
     @Length(min = 3, max = 120)
     private String title;
     private Long views;
+
+    // Новое поле:
+    private List<CommentDto> comments;  // <-- массив/список комментариев
 }

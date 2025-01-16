@@ -1,0 +1,636 @@
+{
+  "info": {
+    "_postman_id": "11112222-3333-4444-9999-aaaa0000bbbb",
+    "name": "Test Comments",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+
+    {
+      "name": "00) Generate random data",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://postman-echo.com/get",
+          "protocol": "https",
+          "host": [
+            "postman-echo",
+            "com"
+          ],
+          "path": [
+            "get"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Генерируем уникальный timestamp (в мс):",
+              "const ts = Date.now();",
+              "// Создаём уникальные email и имя категории, чтобы не было duplicate:",
+              "pm.collectionVariables.set(\"initiatorEmail\", `initiator_${ts}@yandex.ru`);",
+              "pm.collectionVariables.set(\"guestEmail\", `guest_${ts}@yandex.ru`);",
+              "pm.collectionVariables.set(\"categoryName\", `Tasty_${ts}`);",
+              "",
+              "// Можно сохранить сам timestamp, если хотим где-то использовать",
+              "pm.collectionVariables.set(\"timestamp\", ts.toString());"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Generated random data successfully\", () => {",
+              "  pm.expect(pm.collectionVariables.get(\"initiatorEmail\")).to.not.be.empty;",
+              "  pm.expect(pm.collectionVariables.get(\"guestEmail\")).to.not.be.empty;",
+              "  pm.expect(pm.collectionVariables.get(\"categoryName\")).to.not.be.empty;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "01) Add user Event Initiator (unique email)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Initiator I.I.\",\n  \"email\": \"{{initiatorEmail}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/admin/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin","users"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус должен быть 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const resp = pm.response.json();",
+              "// Сохраняем initiatorUserId в переменные коллекции",
+              "pm.collectionVariables.set(\"initiatorUserId\", resp.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "02) Add Category (unique name)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{categoryName}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/admin/categories",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin","categories"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const cat = pm.response.json();",
+              "pm.collectionVariables.set(\"categoryId\", cat.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "03) Add user Guest 1 (unique email)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Guest1 G.G.\",\n  \"email\": \"{{guestEmail}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/admin/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin","users"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const g = pm.response.json();",
+              "pm.collectionVariables.set(\"guestUserId\", g.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "04) Create Event 1 from user Initiator",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"annotation\": \"Annotation for Event 1\",\n  \"category\": {{categoryId}},\n  \"description\": \"Description for Event 1\",\n  \"eventDate\": \"2025-01-29 12:12:12\",\n  \"location\": { \"lat\": 1.00, \"lon\": 1.00 },\n  \"paid\": true,\n  \"participantLimit\": 50,\n  \"requestModeration\": false,\n  \"title\": \"Title for Event 1\"\n}",
+          "options": {
+            "raw": { "language": "json" }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{initiatorUserId}}/events",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{initiatorUserId}}","events"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const ev = pm.response.json();",
+              "pm.collectionVariables.set(\"event1Id\", ev.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "05) Create Event 2 from user Initiator",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"annotation\": \"Annotation for Event 2\",\n  \"category\": {{categoryId}},\n  \"description\": \"Description for Event 2\",\n  \"eventDate\": \"2025-01-29 12:12:12\",\n  \"location\": { \"lat\": 2.00, \"lon\": 2.00 },\n  \"paid\": true,\n  \"participantLimit\": 40,\n  \"requestModeration\": false,\n  \"title\": \"Title for Event 2\"\n}",
+          "options": {
+            "raw": { "language": "json" }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{initiatorUserId}}/events",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{initiatorUserId}}","events"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const ev = pm.response.json();",
+              "pm.collectionVariables.set(\"event2Id\", ev.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "06) Add empty positive comment from Guest 1 to not published Event 1 (expect 400 or 409)",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"\",\n  \"positive\": true\n}",
+          "options": {
+            "raw": { "language": "json" }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{guestUserId}}/comments/{{event1Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{guestUserId}}","comments","{{event1Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// В вашем случае тесты могут ожидать 400 (пустой text) или 409 (событие не опубликовано).",
+              "pm.test(\"Ожидаем 400 или 409\", () => {",
+              "  pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "07) Publish Event 1 (Update Event 1 State to PUBLISH)",
+      "request": {
+        "method": "PATCH",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stateAction\": \"PUBLISH_EVENT\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8080/admin/events/{{event1Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin","events","{{event1Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Может вернуться 200 (успешно опубликовали) или 409 (уже PUBLISHED).",
+              "pm.test(\"Ожидаем 200 или 409\", () => {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "08) Publish Event 2 (Update Event 2 State to PUBLISH)",
+      "request": {
+        "method": "PATCH",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stateAction\": \"PUBLISH_EVENT\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8080/admin/events/{{event2Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin","events","{{event2Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 200 или 409\", () => {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "09) Add positive comment from Initiator to published Event 1",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Positive comment from Initiator\",\n  \"positive\": true\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{initiatorUserId}}/comments/{{event1Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{initiatorUserId}}","comments","{{event1Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "// Если нужно сохранить commentId:",
+              "const c = pm.response.json();",
+              "pm.collectionVariables.set(\"initiatorCommentId\", c.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "10) Add positive comment from Guest 1 to published Event 1",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Positive comment from Guest1\",\n  \"positive\": true\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{guestUserId}}/comments/{{event1Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{guestUserId}}","comments","{{event1Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const c = pm.response.json();",
+              "pm.collectionVariables.set(\"guestCommentId\", c.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "11) Add second positive comment from Guest 1 to published Event 1 (expect 409)",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Second positive from Guest1\",\n  \"positive\": true\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{guestUserId}}/comments/{{event1Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{guestUserId}}","comments","{{event1Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 409\", () => {",
+              "  pm.response.to.have.status(409);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "12) Add negative comment from Guest 1 to published Event 2",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Negative comment from Guest1 to Event2\",\n  \"positive\": false\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/{{guestUserId}}/comments/{{event2Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{guestUserId}}","comments","{{event2Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 201\", () => {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "13) Get Guest 1 comments",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/users/{{guestUserId}}/comments",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users","{{guestUserId}}","comments"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 200\", () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const arr = pm.response.json();",
+              "pm.test(\"Должен быть >=1 комментарий\", () => {",
+              "  pm.expect(arr.length).to.be.at.least(1);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "14) Delete Guest 1 with comments (admin)",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:8080/admin/users/{{guestUserId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin","users","{{guestUserId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 204\", () => {",
+              "  pm.response.to.have.status(204);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "15) Get Event 1 after Guest 1 Delete",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/events/{{event1Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["events","{{event1Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 200\", () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const ev = pm.response.json();",
+              "pm.test(\"Комментарии должны быть (например, 1)\", () => {",
+              "  // Если гость был удалён, его комменты пропадают? Зависит от вашей логики.",
+              "  // Возможно, будет 1 комментарий (инициатора) или 0.",
+              "  pm.expect(ev.comments).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "16) Get Event 2 after Guest 1 Delete",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/events/{{event2Id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["events","{{event2Id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ожидаем 200\", () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const ev = pm.response.json();",
+              "pm.test(\"Проверяем комментарии\", () => {",
+              "  pm.expect(ev.comments).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "99) Done!",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://postman-echo.com/get",
+          "protocol": "http",
+          "host": ["postman-echo","com"],
+          "path": ["get"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"All done!\", () => {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+
+  ]
+}

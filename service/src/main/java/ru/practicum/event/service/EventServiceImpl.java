@@ -8,6 +8,10 @@ import ru.practicum.EndpointHit;
 import ru.practicum.ViewStats;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
+import ru.practicum.comment.dto.CommentDto;
+import ru.practicum.comment.mapper.CommentMapper;
+import ru.practicum.comment.model.Comment;
+import ru.practicum.comment.repository.CommentRepository;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
@@ -36,6 +40,7 @@ public class EventServiceImpl implements EventService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final StatsClient statsClient;
+    private final CommentRepository commentRepository;
 
     // ------------------ ADMIN ------------------
 
@@ -304,9 +309,16 @@ public class EventServiceImpl implements EventService {
         e.setViews(uniqueViews);
         eventRepository.save(e); // Сохраняем изменения
 
-        return EventMapper.toEventFullDto(e);
-    }
+        EventFullDto dto = EventMapper.toEventFullDto(e);
 
+        List<Comment> approvedComments = commentRepository.findByEvent_IdAndApprovedTrue(id);
+        List<CommentDto> commentDtos = approvedComments.stream()
+                .map(CommentMapper::toCommentDto)
+                .collect(Collectors.toList());
+
+        dto.setComments(commentDtos);
+        return dto;
+    }
 
     // ------------------ PRIVATE ------------------
 
